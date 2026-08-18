@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Rufus - Cold Call Tracker</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 16 16%22><rect width=%2216%22 height=%2216%22 rx=%223%22 fill=%22%236c8cff%22/><circle cx=%226%22 cy=%228%22 r=%221.4%22 fill=%22white%22/><circle cx=%2210%22 cy=%228%22 r=%221.4%22 fill=%22white%22/></svg>" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="theme-color" content="#0b0e14" />
+<link rel="stylesheet" href="app.css" />
+</head>
+<body>
+
+<div id="login-screen" class="login-wrap" hidden>
+  <div class="login-card card card-pad">
+    <div class="logo"><div class="brand-dot"></div><strong>Rufus</strong></div>
+    <h1>Cold-Call-Tracker</h1>
+    <p class="sub">Melde dich per Magic-Link an - kein Passwort nötig.</p>
+    <form id="login-form">
+      <div class="field">
+        <label for="login-email">E-Mail-Adresse</label>
+        <input type="email" id="login-email" placeholder="du@beispiel.de" required autocomplete="email" />
+      </div>
+      <button type="submit" class="btn primary lg" style="width:100%">Link senden</button>
+    </form>
+    <div id="login-msg" class="login-msg"></div>
+  </div>
+</div>
+
+<div id="app" hidden>
+  <nav class="sidebar">
+    <div class="brand"><div class="brand-dot"></div><span>Rufus</span></div>
+    <a class="navlink" data-route="liste" href="#/liste"><span class="icon">☎</span> Leads</a>
+    <a class="navlink" data-route="dashboard" href="#/dashboard"><span class="icon">▤</span> Dashboard</a>
+    <a class="navlink" data-route="import" href="#/import"><span class="icon">⇅</span> Import/Export</a>
+    <a class="navlink" data-route="einstellungen" href="#/einstellungen"><span class="icon">⚙</span> Einstellungen</a>
+    <div class="sidebar-spacer"></div>
+    <div id="sidebar-due" class="due-pill" hidden>
+      <span>Fällig</span><strong id="sidebar-due-count">0</strong>
+    </div>
+    <button class="btn ghost sm" id="logout-btn">Abmelden</button>
+  </nav>
+  <main id="main-content"></main>
+</div>
+
+<div id="toast-wrap" class="toast-wrap"></div>
+
+<div class="buddy-corner">
+  <div id="buddy-bubble" class="buddy-bubble"></div>
+  <div class="buddy-canvas-wrap"><canvas id="buddy-canvas" width="16" height="16"></canvas></div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>
