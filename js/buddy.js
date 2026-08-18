@@ -1,24 +1,24 @@
-// Rufus - der Pixel-Begleiter. Ein einfacher, runder blauer Blob mit Gesicht -
-// bewusst ohne Kopfhörer/Mikro/Arme, die beim ersten Entwurf eher wie ein
-// kleiner Roboter mit Anbauteilen wirkten als wie ein sympathisches Maskottchen.
-// Gezeichnet auf einem winzigen Canvas (imageSmoothingEnabled=false) und per CSS
-// pixelig hochskaliert, damit auch runde Formen den Retro-Pixel-Look behalten.
+// Rufus - der Pixel-Begleiter. Blockige Figur aus reinen Rechtecken (Kopf/Körper
+// mit genippten oberen Ecken, quadratische Augen, zwei Arme, drei Beine),
+// bewusst flach und ohne Umrisslinie - genau wie die Referenzfigur, nur blau
+// statt terrakotta. Alles sind achsenparallele Rechtecke, darum bleiben die
+// Kanten immer scharf (kein Anti-Aliasing wie bei Kurven/Kreisen).
 
 const GRID = 24; // logische Pixelbreite/-höhe des Canvas
 const PALETTE = {
   body: "#5b7cfa",
-  outline: "#141824",
-  eye: "#f4f6fb",
-  pupil: "#141824",
-  mouth: "#141824",
+  eye: "#12141c",
   confettiA: "#f5c542",
   confettiB: "#34d399",
   confettiC: "#f87171",
   confettiD: "#6c8cff",
-  sleep: "#5a6479",
+  sleep: "#7c8aa8",
   sparkle: "#ffe08a",
   alert: "#f5a623",
 };
+
+// Grundform (bevor bounce/Animation angewendet wird), in lokalen Einheiten.
+const BX = 5, BY = 6, BW = 14, BH = 12, CUT = 2;
 
 let ctx = null;
 let bubbleEl = null;
@@ -29,100 +29,64 @@ function px(x, y, w, h, color) {
   ctx.fillStyle = color;
   ctx.fillRect(Math.round(x), Math.round(y), Math.round(w), Math.round(h));
 }
-
 function clear() {
   ctx.clearRect(0, 0, GRID, GRID);
 }
-
-// Canvas-Kurven/-Kreise (arc, ellipse, stroke) werden IMMER kantengeglättet
-// gezeichnet - imageSmoothingEnabled wirkt nur beim Hochskalieren, nicht beim
-// Zeichnen selbst. Für einen wirklich scharfkantigen Pixel-Look wird darum
-// jede runde Form zeilenweise aus vollen Pixel-Rechtecken zusammengesetzt.
-function fillEllipseRows(cx, cy, rx, ry, color) {
-  ctx.fillStyle = color;
-  const top = Math.round(cy - ry);
-  const bottom = Math.round(cy + ry);
-  for (let y = top; y <= bottom; y++) {
-    const dy = (y + 0.5 - cy) / ry;
-    const t = 1 - dy * dy;
-    if (t < 0) continue;
-    const halfW = rx * Math.sqrt(t);
-    const xLeft = Math.round(cx - halfW);
-    const xRight = Math.round(cx + halfW);
-    ctx.fillRect(xLeft, y, Math.max(1, xRight - xLeft), 1);
-  }
-}
-function fillCircle(cx, cy, r, color) {
-  fillEllipseRows(cx, cy, r, r, color);
-}
-
-function drawSparkle(x, y, color, size = 2.4) {
+function drawSparkle(x, y, color, size = 2.2) {
   ctx.fillStyle = color;
   ctx.fillRect(Math.round(x - size / 2), Math.round(y), Math.round(size), 1);
   ctx.fillRect(Math.round(x), Math.round(y - size / 2), 1, Math.round(size));
 }
 
-// Mund als kleine feste Pixel-Blöcke - kein Stroke/Kurve, damit die Kante hart bleibt.
-function drawMouth(cx, y, style) {
-  const c = PALETTE.mouth;
-  const x = Math.round(cx), yy = Math.round(y);
-  if (style === "smile") {
-    px(x - 3, yy, 1, 1, c);
-    px(x - 2, yy + 1, 4, 1, c);
-    px(x + 2, yy, 1, 1, c);
-  } else if (style === "frown") {
-    px(x - 3, yy + 1, 1, 1, c);
-    px(x - 2, yy, 4, 1, c);
-    px(x + 2, yy + 1, 1, 1, c);
-  } else if (style === "oh") {
-    px(x - 1, yy - 1, 2, 2, c);
-  } else {
-    px(x - 2, yy, 4, 1, c);
-  }
-}
-
 // -- Pose-Komposition -------------------------------------------------------
-// pose: { bounce, eyes: 'open'|'closed'|'wide', mouth: 'neutral'|'smile'|'frown'|'oh',
-//         sparkle?: bool, alert?: bool, particles?: [{x,y,color,size}] }
+// pose: { bounce, eyes: 'open'|'closed'|'wide', armsUp?, sparkle?, alert?, particles? }
 
 function drawRufus(pose) {
   clear();
   const bounce = pose.bounce || 0;
-  const cx = GRID / 2;
-  const cy = 13 + bounce;
-  const rx = 8.5, ry = 7.8;
+  const by = BY + bounce;
 
-  // Kontur (etwas größer, dahinter) + Körper obendrauf - beides zeilenweise
-  // aus harten Pixel-Rechtecken, damit am Rand keine grauen Zwischentöne entstehen.
-  fillEllipseRows(cx, cy, rx + 1, ry + 1, PALETTE.outline);
-  fillEllipseRows(cx, cy, rx, ry, PALETTE.body);
+  // Kopf/Körper: Rechteck mit genippten oberen Ecken (kein Cut unten).
+  px(BX + CUT, by, BW - 2 * CUT, CUT, PALETTE.body); // oberste Reihe, schmaler
+  px(BX, by + CUT, BW, BH - CUT, PALETTE.body); // Rest voll breit
 
-  // Augen
-  const eyeY = cy - ry * 0.12;
-  const eyeDX = rx * 0.42;
-  const eyeR = pose.eyes === "wide" ? 2.3 : 1.85;
-
-  if (pose.eyes === "closed") {
-    for (const dx of [-eyeDX, eyeDX]) {
-      px(cx + dx - 1.5, eyeY, 3, 1, PALETTE.outline);
-    }
+  // Arme
+  const armY = by + BH * 0.4;
+  const armSize = 2.4;
+  if (pose.armsUp) {
+    px(BX - armSize, by - 1, armSize, armSize, PALETTE.body);
+    px(BX + BW, by - 1, armSize, armSize, PALETTE.body);
   } else {
-    for (const dx of [-eyeDX, eyeDX]) {
-      fillCircle(cx + dx, eyeY, eyeR, PALETTE.eye);
-      fillCircle(cx + dx + 0.4, eyeY + 0.4, eyeR * 0.5, PALETTE.pupil);
-      fillCircle(cx + dx - eyeR * 0.4, eyeY - eyeR * 0.4, Math.max(0.6, eyeR * 0.22), "#ffffff");
-    }
+    px(BX - armSize, armY, armSize, armSize, PALETTE.body);
+    px(BX + BW, armY, armSize, armSize, PALETTE.body);
   }
 
-  drawMouth(cx, cy + ry * 0.42, pose.mouth);
+  // Beine: drei Rechtecke unten, gleichmäßig verteilt
+  const legW = 2.2, legH = 3, gap = 1.4;
+  const legsTotal = legW * 3 + gap * 2;
+  let lx = BX + (BW - legsTotal) / 2;
+  for (let i = 0; i < 3; i++) {
+    px(lx, by + BH, legW, legH, PALETTE.body);
+    lx += legW + gap;
+  }
+
+  // Augen: schwarze Quadrate direkt auf dem Körper, keine weiße Lederhaut.
+  const eyeSize = pose.eyes === "wide" ? 3 : 2.5;
+  const eyeY = by + BH * 0.3;
+  const eyeXs = [BX + BW * 0.22, BX + BW * 0.78 - eyeSize];
+  if (pose.eyes === "closed") {
+    for (const ex of eyeXs) px(ex, eyeY + eyeSize / 2 - 0.5, eyeSize, 1, PALETTE.eye);
+  } else {
+    for (const ex of eyeXs) px(ex, eyeY, eyeSize, eyeSize, PALETTE.eye);
+  }
 
   if (pose.sparkle) {
-    drawSparkle(cx + rx + 1.5, cy - ry - 1, PALETTE.sparkle);
-    drawSparkle(cx - rx - 0.5, cy - ry + 1.5, PALETTE.sparkle, 1.6);
+    drawSparkle(BX + BW + 2, by - 2, PALETTE.sparkle);
+    drawSparkle(BX - 2, by, PALETTE.sparkle, 1.6);
   }
   if (pose.alert) {
-    const pulse = 1.4 + Math.sin(Date.now() / 180) * 0.3;
-    fillCircle(cx + rx - 1, cy - ry + 1, pulse, PALETTE.alert);
+    const pulse = 1.6 + Math.sin(Date.now() / 180) * 0.4;
+    px(BX + BW - pulse / 2, by - 2 - pulse / 2, pulse, pulse, PALETTE.alert);
   }
 
   for (const p of pose.particles || []) {
@@ -151,35 +115,34 @@ function randomQuip(state) {
 const STATE_LOOPS = {
   idle: () => {
     const t = Date.now() / 900;
-    return { bounce: Math.sin(t) * 0.6, eyes: Math.sin(t * 2.3) > 0.97 ? "closed" : "open", mouth: "neutral" };
+    return { bounce: Math.sin(t) * 0.6, eyes: Math.sin(t * 2.3) > 0.97 ? "closed" : "open" };
   },
   call: () => {
-    const t = Date.now() / 260;
-    return { bounce: Math.sin(t / 3) * 0.4, eyes: "open", mouth: Math.sin(t) > 0 ? "oh" : "neutral" };
+    const t = Date.now() / 300;
+    return { bounce: Math.sin(t / 3) * 0.4, eyes: Math.sin(t) > 0.5 ? "closed" : "open" };
   },
   termin: (elapsed) => {
     const t = elapsed / 130;
-    return { bounce: -Math.abs(Math.sin(t)) * 3.2, eyes: "wide", mouth: "smile", sparkle: true, particles: confetti(elapsed) };
+    return { bounce: -Math.abs(Math.sin(t)) * 3.4, eyes: "wide", armsUp: true, sparkle: true, particles: confetti(elapsed) };
   },
-  entscheider: () => ({ bounce: Math.sin(Date.now() / 500) * 0.4, eyes: "open", mouth: "smile", sparkle: true }),
+  entscheider: () => ({ bounce: Math.sin(Date.now() / 500) * 0.4, eyes: "open", sparkle: true }),
   abgewimmelt: (elapsed) => {
-    const t = elapsed / 180;
-    return { bounce: Math.sin(t) * 0.8, eyes: "open", mouth: "frown" };
+    const t = elapsed / 200;
+    return { bounce: Math.sin(t) * 0.9, eyes: "open" };
   },
-  rueckruf: () => ({ bounce: Math.sin(Date.now() / 400) * 0.5, eyes: "wide", mouth: "neutral", alert: true }),
+  rueckruf: () => ({ bounce: Math.sin(Date.now() / 400) * 0.5, eyes: "wide", alert: true }),
   ziel: (elapsed) => {
     const t = elapsed / 140;
-    return { bounce: -Math.abs(Math.sin(t)) * 2.8, eyes: "wide", mouth: "smile", sparkle: true, particles: confetti(elapsed) };
+    return { bounce: -Math.abs(Math.sin(t)) * 3, eyes: "wide", armsUp: true, sparkle: true, particles: confetti(elapsed) };
   },
   schlaeft: (elapsed) => {
     const t = elapsed / 1400;
     return {
       bounce: Math.sin(t) * 0.3,
       eyes: "closed",
-      mouth: "neutral",
       particles: [
-        { x: 17, y: 3 - ((elapsed / 400) % 8), size: 1.5, color: PALETTE.sleep },
-        { x: 19, y: 6 - ((elapsed / 400) % 8), size: 1, color: PALETTE.sleep },
+        { x: 20, y: 2 - ((elapsed / 400) % 8), size: 1.5, color: PALETTE.sleep },
+        { x: 22, y: 5 - ((elapsed / 400) % 8), size: 1, color: PALETTE.sleep },
       ],
     };
   },
