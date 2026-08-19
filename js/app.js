@@ -4,6 +4,7 @@ import * as store from "./store.js";
 import { initRouter, registerRoute, navigate } from "./router.js";
 import { toast } from "./toast.js";
 import { renderListe, openLeadPanel } from "./views/liste.js";
+import { renderFollowups } from "./views/followups.js";
 import { renderDashboard } from "./views/dashboard.js";
 import { renderImport } from "./views/import.js";
 import { renderEinstellungen } from "./views/einstellungen.js";
@@ -27,6 +28,7 @@ registerRoute("lead", async (container, param) => {
   await renderListe(container);
   if (param) openLeadPanel(param);
 });
+registerRoute("followups", renderFollowups);
 registerRoute("dashboard", renderDashboard);
 registerRoute("import", renderImport);
 registerRoute("einstellungen", renderEinstellungen);
@@ -54,6 +56,8 @@ logoutBtn.addEventListener("click", async () => {
   await api.signOut();
   location.reload();
 });
+
+sidebarDue.addEventListener("click", () => navigate("/followups"));
 
 function updateSidebarDue() {
   const due = store.computeDueLeads().filter((l) => new Date(l.next_action_at).getTime() <= Date.now());

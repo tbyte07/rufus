@@ -102,7 +102,9 @@ p { margin: 0; }
   padding: 10px 12px; border-radius: var(--radius-sm);
   background: var(--bg-card); border: 1px solid var(--border);
   font-size: 13px; color: var(--text-dim); margin-bottom: 10px;
+  cursor: pointer;
 }
+.due-pill:hover { background: var(--bg-card-hover); border-color: var(--accent); }
 .due-pill strong { color: var(--danger); font-size: 15px; }
 
 main {

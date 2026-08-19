@@ -157,7 +157,7 @@ function renderTable() {
   });
 }
 
-function nextActionCell(lead) {
+export function nextActionCell(lead) {
   if (!lead.next_action_at) return `<span class="muted">—</span>`;
   const overdue = isOverdue(lead.next_action_at);
   const soon = !overdue && isDueSoon(lead.next_action_at, 120);

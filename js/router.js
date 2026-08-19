@@ -1,4 +1,4 @@
-// Minimaler Hash-Router. Routen: #/liste, #/lead/<id>, #/dashboard, #/import, #/einstellungen
+// Minimaler Hash-Router. Routen: #/liste, #/lead/<id>, #/followups, #/dashboard, #/import, #/einstellungen
 const routes = new Map();
 let currentCleanup = null;
 let container = null;
