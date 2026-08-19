@@ -4,7 +4,7 @@
 import * as api from "../api.js";
 import { toast } from "../toast.js";
 import { getSettings } from "../settings.js";
-import { escapeHtml } from "../util.js";
+import { escapeHtml, fmtRelative, isOverdue } from "../util.js";
 
 const STAGE_COLOR = {
   versucht: "var(--text-faint)",
@@ -204,14 +204,39 @@ async function renderOffen() {
     document.getElementById("offen").innerHTML = `<p class="sub">Konnte nicht geladen werden.</p>`;
     return;
   }
-  const rueckrufe = leads.filter((l) => l.next_action === "rueckruf").length;
-  const followups = leads.filter((l) => l.next_action === "info_mail").length;
-  const termine = leads.filter((l) => l.lead_status === "termin").length;
+  const rueckrufe = leads.filter((l) => l.next_action === "rueckruf" && l.next_action_at)
+    .sort((a, b) => new Date(a.next_action_at) - new Date(b.next_action_at));
+  const followups = leads.filter((l) => l.next_action === "info_mail" && l.next_action_at)
+    .sort((a, b) => new Date(a.next_action_at) - new Date(b.next_action_at));
+  const termine = leads.filter((l) => l.lead_status === "termin" && l.termin_at)
+    .sort((a, b) => new Date(a.termin_at) - new Date(b.termin_at));
+
   document.getElementById("offen").innerHTML = `
-    <dl class="info-grid">
-      <dt>Fällige Rückrufe</dt><dd>${rueckrufe}</dd>
-      <dt>Offene Follow-ups</dt><dd>${followups}</dd>
-      <dt>Anstehende Termine</dt><dd>${termine}</dd>
-    </dl>
+    <div class="offen-groups">
+      ${offenGroup("Follow-ups", followups, "next_action_at")}
+      ${offenGroup("Rückrufe", rueckrufe, "next_action_at")}
+      ${offenGroup("Termine", termine, "termin_at")}
+    </div>
+  `;
+  document.querySelectorAll(".offen-item").forEach((el) => {
+    el.addEventListener("click", () => { window.location.hash = `/lead/${el.dataset.id}`; });
+  });
+}
+
+function offenGroup(title, items, dateField) {
+  const preview = items.slice(0, 5);
+  return `
+    <div class="offen-group">
+      <h4>${escapeHtml(title)} <span class="sub">(${items.length})</span></h4>
+      ${preview.length ? preview.map((l) => {
+        const overdue = isOverdue(l[dateField]);
+        return `
+          <div class="offen-item" data-id="${l.id}">
+            <span class="firma">${escapeHtml(l.firma)}</span>
+            <span class="when ${overdue ? "overdue-text" : "soon-text"}">${fmtRelative(l[dateField])}</span>
+          </div>`;
+      }).join("") : `<p class="sub" style="margin:4px 0 0">Nichts offen.</p>`}
+      ${items.length > preview.length ? `<p class="sub" style="margin-top:4px">+ ${items.length - preview.length} weitere</p>` : ""}
+    </div>
   `;
 }

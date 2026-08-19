@@ -15,8 +15,8 @@ export const STUFEN_ORDER = ["nicht_erreicht", "gatekeeper", "entscheider", "ter
 
 export const ACTIONS = [
   { key: "keine", label: "Keine weitere Aktion" },
-  { key: "info_mail", label: "Infos senden + Follow-up" },
-  { key: "rueckruf", label: "Rückruf" },
+  { key: "info_mail", label: "Infos senden + Follow-up", short: "Follow-up" },
+  { key: "rueckruf", label: "Rückruf", short: "Rückruf" },
   { key: "tot", label: "Lead abschließen" },
 ];
 export const ACTIONS_BY_KEY = Object.fromEntries(ACTIONS.map((a) => [a.key, a]));

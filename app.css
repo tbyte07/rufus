@@ -214,6 +214,20 @@ label { display: block; font-size: 12.5px; color: var(--text-dim); margin-bottom
 .due-card .when.overdue-text { color: var(--danger); font-weight: 650; }
 .due-card .when.soon-text { color: var(--stage-gatekeeper); font-weight: 650; }
 
+/* ---------- Dashboard: Offen-Gruppen ---------- */
+.offen-groups { display: flex; flex-direction: column; gap: 16px; }
+.offen-group h4 { font-size: 13px; margin-bottom: 6px; display: flex; align-items: baseline; gap: 6px; }
+.offen-item {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 6px 0; border-bottom: 1px solid var(--border); cursor: pointer; font-size: 13px;
+}
+.offen-item:last-of-type { border-bottom: none; }
+.offen-item:hover .firma { color: var(--accent); }
+.offen-item .firma { font-weight: 550; }
+.offen-item .when { font-size: 12px; white-space: nowrap; margin-left: 10px; }
+.offen-item .when.overdue-text { color: var(--danger); font-weight: 650; }
+.offen-item .when.soon-text { color: var(--stage-gatekeeper); font-weight: 650; }
+
 table.leads { width: 100%; border-collapse: collapse; }
 table.leads th {
   text-align: left; font-size: 11.5px; text-transform: uppercase; letter-spacing: 0.04em;

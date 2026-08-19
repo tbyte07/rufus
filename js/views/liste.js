@@ -1,12 +1,12 @@
 // Hauptansicht: durchsuchbare/filterbare Leadliste mit Fälligkeitsband oben.
 import * as store from "../store.js";
 import { openLeadPanel } from "./lead.js";
-import { LEAD_STATUS_LABEL } from "../constants.js";
+import { LEAD_STATUS_LABEL, ACTIONS_BY_KEY } from "../constants.js";
 import { escapeHtml, fmtRelative, fmtDate, isOverdue, isDueSoon, debounce } from "../util.js";
 
 export { openLeadPanel };
 
-const filters = { search: "", icp: "alle", status: "alle", kampagne: "alle", sort: "firma" };
+const filters = { search: "", icp: "alle", status: "alle", kampagne: "alle", aktion: "alle", sort: "faellig" };
 let unsubscribe = null;
 
 export async function renderListe(container) {
@@ -35,9 +35,14 @@ export async function renderListe(container) {
         <option value="tot">Abgeschlossen</option>
       </select>
       <select id="f-kampagne"><option value="alle">Kampagne: Alle</option></select>
+      <select id="f-aktion">
+        <option value="alle">Aktion: Alle</option>
+        <option value="info_mail">Nur Follow-ups</option>
+        <option value="rueckruf">Nur Rückrufe</option>
+      </select>
       <select id="f-sort">
-        <option value="firma">Sortierung: Firma A-Z</option>
         <option value="faellig">Sortierung: Fällig zuerst</option>
+        <option value="firma">Sortierung: Firma A-Z</option>
         <option value="zuletzt">Sortierung: Zuletzt kontaktiert</option>
       </select>
     </div>
@@ -58,12 +63,14 @@ export async function renderListe(container) {
   container.querySelector("#f-search").value = filters.search;
   container.querySelector("#f-icp").value = filters.icp;
   container.querySelector("#f-status").value = filters.status;
+  container.querySelector("#f-aktion").value = filters.aktion;
   container.querySelector("#f-sort").value = filters.sort;
 
   const debouncedSearch = debounce((val) => { filters.search = val; renderTable(); }, 180);
   container.querySelector("#f-search").addEventListener("input", (e) => debouncedSearch(e.target.value));
   container.querySelector("#f-icp").addEventListener("change", (e) => { filters.icp = e.target.value; renderTable(); });
   container.querySelector("#f-status").addEventListener("change", (e) => { filters.status = e.target.value; renderTable(); });
+  container.querySelector("#f-aktion").addEventListener("change", (e) => { filters.aktion = e.target.value; renderTable(); });
   container.querySelector("#f-sort").addEventListener("change", (e) => { filters.sort = e.target.value; renderTable(); });
   container.querySelector("#f-kampagne").addEventListener("change", (e) => { filters.kampagne = e.target.value; renderTable(); });
 
@@ -93,6 +100,7 @@ function getFiltered() {
     if (filters.icp !== "alle" && l.icp_status !== filters.icp) return false;
     if (filters.status !== "alle" && l.lead_status !== filters.status) return false;
     if (filters.kampagne !== "alle" && l.kampagne !== filters.kampagne) return false;
+    if (filters.aktion !== "alle" && l.next_action !== filters.aktion) return false;
     if (q) {
       const hay = `${l.firma || ""} ${l.ort || ""} ${l.telefon || ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
@@ -154,7 +162,8 @@ function nextActionCell(lead) {
   const overdue = isOverdue(lead.next_action_at);
   const soon = !overdue && isDueSoon(lead.next_action_at, 120);
   const cls = overdue ? "overdue" : soon ? "soon" : "";
-  return `<span class="badge ${cls}">${fmtRelative(lead.next_action_at)}</span>`;
+  const short = ACTIONS_BY_KEY[lead.next_action]?.short;
+  return `<span class="badge ${cls}">${short ? escapeHtml(short) + " · " : ""}${fmtRelative(lead.next_action_at)}</span>`;
 }
 
 function renderDueBand() {
@@ -168,10 +177,11 @@ function renderDueBand() {
 
   band.innerHTML = `<div class="due-band">${due.map((lead) => {
     const overdue = isOverdue(lead.next_action_at);
+    const short = ACTIONS_BY_KEY[lead.next_action]?.short || "Fällig";
     return `
       <div class="due-card ${overdue ? "overdue" : ""}" data-id="${lead.id}">
         <div class="firma">${escapeHtml(lead.firma)}</div>
-        <div class="when ${overdue ? "overdue-text" : "soon-text"}">${fmtRelative(lead.next_action_at)}</div>
+        <div class="when ${overdue ? "overdue-text" : "soon-text"}">${escapeHtml(short)} · ${fmtRelative(lead.next_action_at)}</div>
       </div>`;
   }).join("")}</div>`;
 
