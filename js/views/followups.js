@@ -3,7 +3,7 @@
 // "was steht an"-Blick, ohne durch die ganze Liste filtern zu müssen.
 import * as store from "../store.js";
 import { openLeadPanel, nextActionCell } from "./liste.js";
-import { escapeHtml, isOverdue, debounce } from "../util.js";
+import { escapeHtml, isOverdue, debounce, normalizePhone } from "../util.js";
 
 export { openLeadPanel };
 
@@ -30,7 +30,7 @@ export async function renderFollowups(container) {
     <div class="card">
       <div style="overflow-x:auto">
         <table class="leads">
-          <thead><tr><th>Firma</th><th>Ort</th><th>Fällig</th></tr></thead>
+          <thead><tr><th>Firma</th><th>Telefon</th><th>Ort</th><th>Fällig</th></tr></thead>
           <tbody id="fu-tbody"></tbody>
         </table>
       </div>
@@ -54,7 +54,7 @@ function getItems() {
     .filter((l) => filters.aktion === "alle" || l.next_action === filters.aktion)
     .filter((l) => {
       if (!q) return true;
-      return `${l.firma || ""} ${l.ort || ""}`.toLowerCase().includes(q);
+      return `${l.firma || ""} ${l.ort || ""} ${l.telefon || ""}`.toLowerCase().includes(q);
     })
     .sort((a, b) => new Date(a.next_action_at) - new Date(b.next_action_at));
 }
@@ -90,6 +90,7 @@ function render() {
   tbody.innerHTML = items.map((lead) => `
     <tr class="row" data-id="${lead.id}">
       <td class="firma-cell">${escapeHtml(lead.firma)}</td>
+      <td class="muted">${lead.telefon ? `<a href="tel:${normalizePhone(lead.telefon)}" onclick="event.stopPropagation()">${escapeHtml(lead.telefon)}</a>` : "—"}</td>
       <td class="muted">${escapeHtml(lead.ort || "—")}</td>
       <td>${nextActionCell(lead)}</td>
     </tr>

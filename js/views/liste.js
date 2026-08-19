@@ -2,7 +2,7 @@
 import * as store from "../store.js";
 import { openLeadPanel } from "./lead.js";
 import { LEAD_STATUS_LABEL, ACTIONS_BY_KEY } from "../constants.js";
-import { escapeHtml, fmtRelative, fmtDate, isOverdue, isDueSoon, debounce } from "../util.js";
+import { escapeHtml, fmtRelative, fmtDate, isOverdue, isDueSoon, debounce, normalizePhone } from "../util.js";
 
 export { openLeadPanel };
 
@@ -51,7 +51,7 @@ export async function renderListe(container) {
       <div style="overflow-x:auto">
         <table class="leads">
           <thead>
-            <tr><th>Firma</th><th>Ort</th><th>ICP</th><th>Status</th><th>Nächste Aktion</th><th>Anrufe</th></tr>
+            <tr><th>Firma</th><th>Telefon</th><th>Ort</th><th>ICP</th><th>Status</th><th>Nächste Aktion</th><th>Anrufe</th></tr>
           </thead>
           <tbody id="leads-tbody"></tbody>
         </table>
@@ -144,6 +144,7 @@ function renderTable() {
   tbody.innerHTML = filtered.map((lead) => `
     <tr class="row" data-id="${lead.id}">
       <td class="firma-cell">${escapeHtml(lead.firma)}</td>
+      <td class="muted">${lead.telefon ? `<a href="tel:${normalizePhone(lead.telefon)}" onclick="event.stopPropagation()">${escapeHtml(lead.telefon)}</a>` : "—"}</td>
       <td class="muted">${escapeHtml(lead.ort || "—")}</td>
       <td><span class="badge ${lead.icp_status === "JA" ? "icp-ja" : "icp-nein"}">${escapeHtml(lead.icp_status || "?")}</span></td>
       <td><span class="badge stage-${lead.lead_status === "termin" ? "termin" : lead.lead_status === "tot" ? "falsche_nummer" : "nicht_erreicht"}">${LEAD_STATUS_LABEL[lead.lead_status] || lead.lead_status}</span></td>
