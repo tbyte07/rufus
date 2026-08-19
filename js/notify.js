@@ -31,7 +31,7 @@ export async function requestPermission() {
 
 function fireBrowserNotification(lead) {
   if (!("Notification" in window) || Notification.permission !== "granted") return;
-  const label = lead.next_action === "mail" ? "Mail" : lead.next_action === "followup" ? "Follow-up" : "Rückruf";
+  const label = lead.next_action === "info_mail" ? "Follow-up" : "Rückruf";
   const body = `${label} fällig: ${lead.firma}${lead.ort ? " · " + lead.ort : ""}`;
 
   const swReady = navigator.serviceWorker?.ready;

@@ -205,12 +205,12 @@ async function renderOffen() {
     return;
   }
   const rueckrufe = leads.filter((l) => l.next_action === "rueckruf").length;
-  const mails = leads.filter((l) => l.next_action === "mail").length;
+  const followups = leads.filter((l) => l.next_action === "info_mail").length;
   const termine = leads.filter((l) => l.lead_status === "termin").length;
   document.getElementById("offen").innerHTML = `
     <dl class="info-grid">
       <dt>Fällige Rückrufe</dt><dd>${rueckrufe}</dd>
-      <dt>Offene Mails</dt><dd>${mails}</dd>
+      <dt>Offene Follow-ups</dt><dd>${followups}</dd>
       <dt>Anstehende Termine</dt><dd>${termine}</dd>
     </dl>
   `;

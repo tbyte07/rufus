@@ -13,11 +13,18 @@ export async function renderEinstellungen(container) {
     <div class="view-header"><div><h1>Einstellungen</h1><div class="sub">Ganz persönlich - nur auf diesem Gerät gespeichert.</div></div></div>
 
     <div class="card card-pad" style="margin-bottom:20px;max-width:640px">
-      <h3 style="margin-bottom:14px">Mailvorlage</h3>
-      <p class="sub" style="margin-bottom:14px">Platzhalter: <code>{firma}</code> <code>{ort}</code> <code>{ansprechpartner}</code> <code>{notiz}</code></p>
-      <div class="field"><label>Betreff</label><input type="text" id="s-subject" value="${escapeHtml(s.mailSubject)}" /></div>
-      <div class="field"><label>Text</label><textarea id="s-body" style="min-height:140px">${escapeHtml(s.mailBody)}</textarea></div>
-      <div class="field"><label>Follow-up-Erinnerung nach Mail (Tage)</label><input type="text" id="s-followup-days" value="${s.mailFollowupDays}" style="max-width:100px" /></div>
+      <h3 style="margin-bottom:4px">Mail bei Termin</h3>
+      <p class="sub" style="margin-bottom:14px">Wird vorgeschlagen, sobald du einen Termin einträgst. Platzhalter: <code>{firma}</code> <code>{ort}</code> <code>{ansprechpartner}</code> <code>{notiz}</code> <code>{termin}</code></p>
+      <div class="field"><label>Betreff</label><input type="text" id="s-termin-subject" value="${escapeHtml(s.mailTerminSubject)}" /></div>
+      <div class="field"><label>Text</label><textarea id="s-termin-body" style="min-height:120px">${escapeHtml(s.mailTerminBody)}</textarea></div>
+    </div>
+
+    <div class="card card-pad" style="margin-bottom:20px;max-width:640px">
+      <h3 style="margin-bottom:4px">Mail bei Interesse (kein Termin)</h3>
+      <p class="sub" style="margin-bottom:14px">Wird vorgeschlagen bei "Infos senden + Follow-up". Platzhalter: <code>{firma}</code> <code>{ort}</code> <code>{ansprechpartner}</code> <code>{notiz}</code></p>
+      <div class="field"><label>Betreff</label><input type="text" id="s-info-subject" value="${escapeHtml(s.mailInfoSubject)}" /></div>
+      <div class="field"><label>Text</label><textarea id="s-info-body" style="min-height:120px">${escapeHtml(s.mailInfoBody)}</textarea></div>
+      <div class="field"><label>Follow-up-Erinnerung nach dieser Mail (Tage)</label><input type="text" id="s-followup-days" value="${s.mailFollowupDays}" style="max-width:100px" /></div>
     </div>
 
     <div class="card card-pad" style="margin-bottom:20px;max-width:640px">
@@ -57,8 +64,10 @@ export async function renderEinstellungen(container) {
 
   container.querySelector("#s-save").addEventListener("click", () => {
     saveSettings({
-      mailSubject: container.querySelector("#s-subject").value,
-      mailBody: container.querySelector("#s-body").value,
+      mailTerminSubject: container.querySelector("#s-termin-subject").value,
+      mailTerminBody: container.querySelector("#s-termin-body").value,
+      mailInfoSubject: container.querySelector("#s-info-subject").value,
+      mailInfoBody: container.querySelector("#s-info-body").value,
       mailFollowupDays: Number(container.querySelector("#s-followup-days").value) || 3,
       dailyGoalCalls: Number(container.querySelector("#s-goal-calls").value) || 40,
       dailyGoalTermine: Number(container.querySelector("#s-goal-termine").value) || 2,

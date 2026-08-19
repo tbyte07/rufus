@@ -16,6 +16,8 @@ let selectedStufe = null;
 let selectedAction = "keine";
 let selectedDatetime = null;
 let mailOpenedManually = false;
+let sendTerminMail = true;
+let terminMailOpenedManually = false;
 let keydownHandler = null;
 let overlayEl = null;
 
@@ -32,6 +34,8 @@ export function openLeadPanel(id) {
   selectedAction = "keine";
   selectedDatetime = null;
   mailOpenedManually = false;
+  sendTerminMail = true;
+  terminMailOpenedManually = false;
 
   overlayEl = document.createElement("div");
   overlayEl.className = "overlay";
@@ -166,6 +170,9 @@ function selectStufe(key) {
   selectedStufe = key;
   selectedAction = "keine";
   selectedDatetime = null;
+  sendTerminMail = true;
+  terminMailOpenedManually = false;
+  mailOpenedManually = false;
   panelEl().querySelectorAll(".stufe-btn").forEach((b) => b.classList.toggle("selected", b.dataset.stufe === key));
   renderAxis2();
 }
@@ -178,14 +185,29 @@ function renderAxis2() {
 
   if (selectedStufe === "termin") {
     const defaultVal = isoToLocalInput(tomorrowAt(10));
+    const lead = store.getLead(currentLeadId);
     wrap.innerHTML = `
       <div class="field" style="margin-top:14px">
         <label>Termin am</label>
         <input type="datetime-local" id="termin-input" value="${defaultVal}" />
-      </div>`;
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;margin-top:10px">
+        <input type="checkbox" id="termin-mail-toggle" ${sendTerminMail ? "checked" : ""} style="width:auto" ${lead?.email ? "" : "disabled"} />
+        <span>Terminbestätigung per Mail senden${lead?.email ? "" : " (keine E-Mail-Adresse hinterlegt)"}</span>
+      </label>
+      ${lead?.email ? `<button type="button" class="btn sm" id="open-termin-mail-btn" style="margin-top:8px">✉ Mail-Entwurf ansehen</button>` : ""}
+    `;
     selectedDatetime = localInputToIso(defaultVal);
+    sendTerminMail = !!lead?.email;
     wrap.querySelector("#termin-input").addEventListener("change", (e) => {
       selectedDatetime = localInputToIso(e.target.value);
+    });
+    wrap.querySelector("#termin-mail-toggle").addEventListener("change", (e) => {
+      sendTerminMail = e.target.checked;
+    });
+    wrap.querySelector("#open-termin-mail-btn")?.addEventListener("click", () => {
+      window.open(buildMailto(store.getLead(currentLeadId), "termin"), "_blank");
+      terminMailOpenedManually = true;
     });
     return;
   }
@@ -214,7 +236,7 @@ function selectAction(key) {
   const timeWrap = panelEl()?.querySelector("#time-picker-wrap");
   if (!timeWrap) return;
 
-  if (!["mail", "rueckruf", "followup"].includes(key)) {
+  if (!["info_mail", "rueckruf"].includes(key)) {
     timeWrap.innerHTML = "";
     selectedDatetime = null;
     return;
@@ -240,7 +262,7 @@ function selectAction(key) {
       ${quickTimes.map((q, i) => `<span class="quick-time ${i === 0 ? "selected" : ""}" data-iso="${q.iso}">${escapeHtml(q.label)}</span>`).join("")}
     </div>
     <input type="datetime-local" id="custom-time-input" value="${isoToLocalInput(selectedDatetime)}" />
-    ${key === "mail" ? `<button type="button" class="btn sm" id="open-mail-btn" style="margin-top:10px">✉ Mail-Entwurf ansehen</button>` : ""}
+    ${key === "info_mail" ? `<button type="button" class="btn sm" id="open-mail-btn" style="margin-top:10px">✉ Mail-Entwurf ansehen</button>` : ""}
   `;
   timeWrap.querySelectorAll(".quick-time").forEach((chip) => {
     chip.addEventListener("click", () => {
@@ -256,15 +278,17 @@ function selectAction(key) {
   });
   timeWrap.querySelector("#open-mail-btn")?.addEventListener("click", () => {
     const lead = store.getLead(currentLeadId);
-    window.open(buildMailto(lead), "_blank");
+    window.open(buildMailto(lead, "info"), "_blank");
     mailOpenedManually = true;
   });
 }
 
-function buildMailto(lead) {
+// kind: "info" (Infos + Follow-up, keine Terminzusage) oder "termin" (Terminbestätigung).
+function buildMailto(lead, kind) {
   const settings = getSettings();
-  const subject = fillTemplate(settings.mailSubject, lead);
-  const body = fillTemplate(settings.mailBody, lead);
+  const extra = kind === "termin" ? { termin: fmtDateTime(selectedDatetime) } : {};
+  const subject = fillTemplate(kind === "termin" ? settings.mailTerminSubject : settings.mailInfoSubject, lead, extra);
+  const body = fillTemplate(kind === "termin" ? settings.mailTerminBody : settings.mailInfoBody, lead, extra);
   return `mailto:${encodeURIComponent(lead.email || "")}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 }
 
@@ -280,7 +304,7 @@ async function handleSaveCall() {
   if (selectedStufe === "termin") {
     terminAt = selectedDatetime;
     if (!terminAt) { toast("Bitte einen Termin-Zeitpunkt wählen.", "error"); return; }
-  } else if (["mail", "rueckruf", "followup"].includes(nextAction)) {
+  } else if (["info_mail", "rueckruf"].includes(nextAction)) {
     nextActionAt = selectedDatetime;
     if (!nextActionAt) { toast("Bitte einen Zeitpunkt wählen.", "error"); return; }
   }
@@ -292,8 +316,12 @@ async function handleSaveCall() {
     markActivity();
     toast("Anruf gespeichert.", "ok");
 
-    if (nextAction === "mail" && !mailOpenedManually) {
-      window.open(buildMailto(store.getLead(currentLeadId)), "_blank");
+    const savedLead = store.getLead(currentLeadId);
+    if (nextAction === "info_mail" && !mailOpenedManually && savedLead.email) {
+      window.open(buildMailto(savedLead, "info"), "_blank");
+    }
+    if (selectedStufe === "termin" && sendTerminMail && !terminMailOpenedManually && savedLead.email) {
+      window.open(buildMailto(savedLead, "termin"), "_blank");
     }
     triggerBuddy(selectedStufe);
 
@@ -301,6 +329,8 @@ async function handleSaveCall() {
     selectedAction = "keine";
     selectedDatetime = null;
     mailOpenedManually = false;
+    sendTerminMail = true;
+    terminMailOpenedManually = false;
     renderPanel();
     loadHistory();
   } catch (err) {
